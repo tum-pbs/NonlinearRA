@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     for i in range(args.n_runs):
         os.makedirs(save_path + "run%d" % i, exist_ok=True)
-        model_path = save_path + "run%d" % i + "/channel_UNet.eqx"
+        model_path = save_path + "run%d" % i + "/channel_MLP.eqx"
         
         if os.path.exists(model_path):
             print("Model already exists for run %d, skipping..." % i)
@@ -135,7 +135,7 @@ if __name__ == "__main__":
             plt.semilogy(sup_1_loss_history)
             plt.xlabel("Training step")
             plt.ylabel("Train Loss")
-            plt.savefig(save_path + "/run%d" % i + "/loss_channel_UNet.png")
+            plt.savefig(save_path + "/run%d" % i + "/loss_channel_MLP.png")
             plt.close()
 
             eqx.tree_serialise_leaves(model_path, sup_1_trained_emu)

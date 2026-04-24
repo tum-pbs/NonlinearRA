@@ -28,7 +28,7 @@ def rollout(stepper, n, *, include_init: bool = False):
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--savedir', default='../results/expo7_layer4_batch64_roll10_nrun2_svd20', type=str, help='directory to save the model')
+    parser.add_argument('--savedir', required=True, type=str, help='directory to save the model')
     args = parser.parse_args()
 
     save_path = args.savedir

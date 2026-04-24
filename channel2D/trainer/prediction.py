@@ -28,7 +28,7 @@ def rollout(stepper, n, *, include_init: bool = False):
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--savedir', type=str, default='../results/expo5_level3_batch16_roll10_nrun2', help='directory to save the model')
+    parser.add_argument('--savedir', type=str, required=True, help='directory to save the model')
     args = parser.parse_args()
 
     save_path = args.savedir
