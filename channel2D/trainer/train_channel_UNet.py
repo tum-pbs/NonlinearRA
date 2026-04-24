@@ -1,24 +1,25 @@
+import argparse
+import os
+import time
+
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import optax
-import equinox as eqx
-import trainax as tx
 import pdequinox as pdeqx
-import os
-import imageio
-import time
-import argparse
+import trainax as tx
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Train a PDE emulator using UNet.")
-    parser.add_argument('--n_rollout', type=int, default=1, help='rollout steps')
-    parser.add_argument('--n_iterations', type=int, default=100000, help='number of training iterations')
+    parser.add_argument('--n_rollout', type=int, default=10, help='rollout steps')
+    parser.add_argument('--n_iterations', type=int, default=500000, help='number of training iterations')
     parser.add_argument('--expo', type=int, default=5, help='channel exponent for network size')
-    parser.add_argument('--batch_size', type=int, default=16, help='batch size')
+    parser.add_argument('--level', type=int, default=3, help='number of levels of Unet')
+    parser.add_argument('--batch_size', type=int, default=64, help='batch size')
     #parser.add_argument('--load_model', type=int, default=0, help='load pre-trained model from previous rollout')
-    parser.add_argument('--n_runs', type=int, default=5, help='number of runs')
+    parser.add_argument('--n_runs', type=int, default=2, help='number of runs')
     parser.add_argument('--gpu', type=str, default='0', help='GPU id to use')
     args = parser.parse_args()
 
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     y_1d = jnp.cos(jnp.pi * jnp.arange(jdim) / (jdim - 1))
     x, y = jnp.meshgrid(x_1d, y_1d, indexing="ij")
 
-    save_path = "../results/expo%d_batch%d_roll%d_nrun%d/" % (args.expo, args.batch_size, args.n_rollout, args.n_runs)
+    save_path = "../results/expo%d_level%d_batch%d_roll%d_nrun%d/" % (args.expo, args.layer, args.batch_size, args.n_rollout, args.n_runs)
 
     for i in range(args.n_runs):
         os.makedirs(save_path + "run%d" % i, exist_ok=True)
@@ -67,7 +68,7 @@ if __name__ == "__main__":
                 2,
                 2,
                 hidden_channels=2**args.expo,
-                num_levels=3,
+                num_levels=args.level,
                 activation=jax.nn.relu,
                 key=jax.random.PRNGKey(0),
                 boundary_mode="dirichlet",

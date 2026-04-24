@@ -1,12 +1,14 @@
-import jax
-import jax.numpy as jnp
-import pdequinox as pdeqx
-import equinox as eqx
-import matplotlib.pyplot as plt
+import argparse
 import os
 import re
+
+import equinox as eqx
 import imageio
-import argparse
+import jax
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import pdequinox as pdeqx
+
 
 def rollout(stepper, n, *, include_init: bool = False):
     def scan_fn(u, _):
@@ -26,20 +28,18 @@ def rollout(stepper, n, *, include_init: bool = False):
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--savedir', type=str, required=True, help='directory to save the model')
+    parser.add_argument('--savedir', type=str, default='../results/expo5_level3_batch16_roll10_nrun2', help='directory to save the model')
     args = parser.parse_args()
 
     save_path = args.savedir
-    pattern = r"expo(\d+)_batch(\d+)_roll(\d+)"
+    pattern = r"expo(\d+)_level(\d+)_batch(\d+)_roll(\d+)_nrun(\d+)"
     match = re.search(pattern, save_path)
 
     if match:
-        expo, batch_size, roll = map(int, match.groups())  # 转换为整数
-        print(f"Loaded parameters: expo={expo}, batch_size={batch_size}, n_rollout={roll}")
+        expo, level, batch_size, roll, n_run = map(int, match.groups())  # 转换为整数
+        print(f"Loaded parameters: expo={expo}, level={level}, batch_size={batch_size}, n_rollout={roll}, n_run={n_run}")
     else:
         raise ValueError(f"No match found: {save_path}.")
-
-    n_runs = sum(os.path.isdir(os.path.join(save_path, item)) for item in os.listdir(save_path))
 
     files = sorted(os.listdir("../dataset/random1"))
     trj = []
@@ -60,14 +60,14 @@ if __name__ == "__main__":
     y_1d = jnp.cos(jnp.pi * jnp.arange(jdim) / (jdim - 1))
     x, y = jnp.meshgrid(x_1d, y_1d, indexing="ij")
 
-    for n in range(n_runs):
+    for n in range(n_run):
         model_path = save_path + "/run%d" % n + "/channel_UNet.eqx"
         emulator = pdeqx.arch.ClassicUNet(
                 2,
                 2,
                 2,
                 hidden_channels=2**expo,
-                num_levels=3,
+                num_levels=level,
                 activation=jax.nn.relu,
                 key=jax.random.PRNGKey(0),
                 boundary_mode="dirichlet",
@@ -88,7 +88,7 @@ if __name__ == "__main__":
             fig.suptitle(f"Frame {i}", fontsize=16)
             colorbars = []
 
-            for j in range(2):  # 对于 u, v, p 三个变量
+            for j in range(2):  # u, v
                 vmin = gt_trj[i, j].min()
                 vmax = gt_trj[i, j].max()
                 bound = max(abs(vmin),abs(vmax))
@@ -122,7 +122,7 @@ if __name__ == "__main__":
                 prediction_loss = prediction_loss.at[i-1, j].set(jnp.sum(jnp.abs(pred_trj[i, j] - gt_trj[i, j]))/jnp.sum(jnp.abs(gt_trj[i, j])))
 
             plt.tight_layout()
-            plt.subplots_adjust(top=0.92)  # 让标题不被遮挡
+            plt.subplots_adjust(top=0.92)
             frame_path = os.path.join(output_dir, f"frame_{i:03d}.png")
             plt.savefig(frame_path)
             

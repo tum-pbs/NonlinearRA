@@ -1,12 +1,14 @@
-import jax
-import jax.numpy as jnp
-import pdequinox as pdeqx
-import equinox as eqx
-import matplotlib.pyplot as plt
+import argparse
 import os
 import re
+
+import equinox as eqx
 import imageio
-import argparse
+import jax
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import pdequinox as pdeqx
+
 
 def rollout(stepper, n, *, include_init: bool = False):
     def scan_fn(u, _):
@@ -26,20 +28,18 @@ def rollout(stepper, n, *, include_init: bool = False):
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--savedir', default='../results/expo5_batch64_roll30_nrun5_svd', type=str, help='directory to save the model')
+    parser.add_argument('--savedir', default='../results/expo7_layer4_batch64_roll10_nrun2_svd20', type=str, help='directory to save the model')
     args = parser.parse_args()
 
     save_path = args.savedir
-    pattern = r"expo(\d+)_batch(\d+)_roll(\d+)"
+    pattern = r"expo(\d+)_layer(\d+)_batch(\d+)_roll(\d+)_nrun(\d+)_svd(\d+)"
     match = re.search(pattern, save_path)
 
     if match:
-        expo, batch_size, roll = map(int, match.groups())  # 转换为整数
-        print(f"Loaded parameters: expo={expo}, batch_size={batch_size}, n_rollout={roll}")
+        expo, layer, batch_size, roll, n_run, r = map(int, match.groups())
+        print(f"Loaded parameters: expo={expo}, layer={layer}, batch_size={batch_size}, n_rollout={roll}, n_run={n_run}, r={r}")
     else:
         raise ValueError(f"No match found: {save_path}.")
-
-    n_runs = sum(os.path.isdir(os.path.join(save_path, item)) for item in os.listdir(save_path))
 
     files = sorted(os.listdir("../dataset/random1"))
     trj = []
@@ -48,30 +48,29 @@ if __name__ == "__main__":
         trj.append(data['data'])
     gt_trj = jnp.array(trj)
 
-    reduced_dynamics = jnp.load("./reduced_dynamics.npz")
-    trjs_reduced_norm = reduced_dynamics['trjs_reduced_norm']
-    max_val = reduced_dynamics['max_val']
-    min_val = reduced_dynamics['min_val']
+    norm_dynamics_svd = jnp.load("./norm_dynamics_svd.npz")
+    trjs_reduced_norm = norm_dynamics_svd['trjs_reduced_norm']
+    max_val = norm_dynamics_svd['max_val']
+    min_val = norm_dynamics_svd['min_val']
 
-    r = 20
-    U = reduced_dynamics['U']
-    sig = reduced_dynamics['sig']
-    Vh = reduced_dynamics['Vh']
+    U = norm_dynamics_svd['U']
+    sig = norm_dynamics_svd['sig']
+    Vh = norm_dynamics_svd['Vh']
 
     idim = 32; jdim = 64
     x_1d = jnp.arange(idim) * 2 * jnp.pi / idim
     y_1d = jnp.cos(jnp.pi * jnp.arange(jdim) / (jdim - 1))
     x, y = jnp.meshgrid(x_1d, y_1d, indexing="ij")
 
-    for n in range(n_runs):
+    for n in range(n_run):
         model_path = save_path + "/run%d" % n + "/channel_UNet.eqx"
         emulator = pdeqx.arch.MLP(
                 num_spatial_dims=1,
                 in_channels=1,
                 out_channels=1,
                 num_points=r,
-                width_size=128,
-                depth=4,
+                width_size=2**expo,
+                depth=layer,
                 activation=jax.nn.gelu,
                 key=jax.random.PRNGKey(0)
             )
@@ -104,7 +103,7 @@ if __name__ == "__main__":
             fig.suptitle(f"Frame {i}", fontsize=16)
             colorbars = []
 
-            for j in range(2):  # 对于 u, v, p 三个变量
+            for j in range(2):  # u, v
                 vmin = gt_trj[i, j].min()
                 vmax = gt_trj[i, j].max()
                 bound = max(abs(vmin),abs(vmax))
@@ -138,7 +137,7 @@ if __name__ == "__main__":
                 prediction_loss = prediction_loss.at[i-1, j].set(jnp.sum(jnp.abs(pred_trj[i, j] - gt_trj[i, j]))/jnp.sum(jnp.abs(gt_trj[i, j])))
 
             plt.tight_layout()
-            plt.subplots_adjust(top=0.92)  # 让标题不被遮挡
+            plt.subplots_adjust(top=0.92)
             frame_path = os.path.join(output_dir, f"frame_{i:03d}.png")
             plt.savefig(frame_path)
             

@@ -1,25 +1,27 @@
+import argparse
+import os
+import time
+
+import equinox as eqx
 import jax
 import jax.numpy as jnp
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import optax
-import equinox as eqx
-import trainax as tx
 import pdequinox as pdeqx
-import os
-import imageio
-import time
-import argparse
+import trainax as tx
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Train a PDE emulator using UNet.")
-    parser.add_argument('--n_rollout', type=int, default=50, help='rollout steps')
+    parser.add_argument('--n_rollout', type=int, default=10, help='rollout steps')
     parser.add_argument('--n_iterations', type=int, default=500000, help='number of training iterations')
-    parser.add_argument('--expo', type=int, default=5, help='channel exponent for network size')
+    parser.add_argument('--expo', type=int, default=7, help='channel exponent for network size')
     parser.add_argument('--batch_size', type=int, default=64, help='batch size')
+    parser.add_argument('--layer', type=int, default=4, help='number of layers')
+    parser.add_argument('--r', type=int, default=20, help='number of SVD modes')
     #parser.add_argument('--load_model', type=int, default=0, help='load pre-trained model from previous rollout')
-    parser.add_argument('--n_runs', type=int, default=5, help='number of runs')
+    parser.add_argument('--n_runs', type=int, default=1, help='number of runs')
     parser.add_argument('--gpu', type=str, default='0', help='GPU id to use')
     args = parser.parse_args()
 
@@ -40,19 +42,13 @@ if __name__ == "__main__":
 
     trjs = np.array(trjs, dtype=np.float64)
     print(trjs.shape)
-    # max_uval = jnp.max(trjs[:, :, 0, :, :])
-    # max_vval = jnp.max(trjs[:, :, 1, :, :])
-    # trjs = trjs.at[:, :, 0, :, :].set(trjs[:, :, 0, :, :] / max_uval)
-    # trjs = trjs.at[:, :, 1, :, :].set(trjs[:, :, 1, :, :] / max_vval)
-    # print("Max u value:", max_uval, "Max v value:", max_vval)
-    # jnp.savez('norm_dynamics.npz', u_max=max_uval, v_max=max_vval)
 
     # SVD for dimension reduction
-    if os.path.exists("./reduced_dynamics.npz"):
-        reduced_dynamics = np.load("./reduced_dynamics.npz")
-        U = reduced_dynamics['U']
-        sig = reduced_dynamics['sig']
-        Vh = reduced_dynamics['Vh']
+    if os.path.exists("./norm_dynamics_svd.npz"):
+        norm_dynamics_svd = np.load("./norm_dynamics_svd.npz")
+        U = norm_dynamics_svd['U']
+        sig = norm_dynamics_svd['sig']
+        Vh = norm_dynamics_svd['Vh']
     else:
         U, sig, Vh = np.linalg.svd(trjs.reshape(trjs.shape[0]*trjs.shape[1], -1), full_matrices=False)
 
@@ -66,7 +62,7 @@ if __name__ == "__main__":
         # plt.tight_layout()
         # plt.show()
 
-    r = 20
+    r = args.r
     trjs_reduced = U[:, :r] @ np.diag(sig[:r])
     trjs_reconstructed = (trjs_reduced @ Vh[:r, :]).reshape(trjs.shape)
     trjs_reduced = trjs_reduced.reshape(trjs.shape[0],trjs.shape[1], -1)
@@ -76,7 +72,7 @@ if __name__ == "__main__":
     max_val = np.max(trjs_reduced, axis=(0, 1, 2))
     min_val = np.min(trjs_reduced, axis=(0, 1, 2))
     trjs_reduced_norm = 2 * ((trjs_reduced - min_val) / (max_val - min_val)) - 1
-    np.savez('reduced_dynamics.npz', trjs_reduced_norm=trjs_reduced_norm, max_val=max_val, min_val=min_val, U=U, sig=sig, Vh=Vh)
+    np.savez('norm_dynamics_svd.npz', trjs_reduced_norm=trjs_reduced_norm, max_val=max_val, min_val=min_val, U=U, sig=sig, Vh=Vh)
     trjs_reduced_norm = jnp.array(trjs_reduced_norm, dtype=jnp.float32)
     
     # Comparison of original and reconstruction
@@ -99,7 +95,7 @@ if __name__ == "__main__":
     y_1d = np.cos(np.pi * np.arange(jdim) / (jdim - 1))
     x, y = np.meshgrid(x_1d, y_1d, indexing="ij")
 
-    save_path = "../results/expo%d_batch%d_roll%d_nrun%d_svd/" % (args.expo, args.batch_size, args.n_rollout, args.n_runs)
+    save_path = "../results/expo%d_layer%d_batch%d_roll%d_nrun%d_svd%d/" % (args.expo, args.layer, args.batch_size, args.n_rollout, args.n_runs, r)
 
     for i in range(args.n_runs):
         os.makedirs(save_path + "run%d" % i, exist_ok=True)
@@ -115,8 +111,8 @@ if __name__ == "__main__":
                 in_channels=1,
                 out_channels=1,
                 num_points=r,
-                width_size=128,
-                depth=4,
+                width_size=2**args.expo,
+                depth=args.layer,
                 activation=jax.nn.gelu,
                 key=jax.random.PRNGKey(i)
             )
