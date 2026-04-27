@@ -1,0 +1,11 @@
+equinox==0.13.7
+h5py==3.14.0
+imageio==2.37.0
+jax==0.6.0
+matplotlib==3.10.9
+numpy==2.4.4
+optax==0.2.8
+pdequinox==0.1.2
+pyvista==0.47.1
+scipy==1.17.1
+trainax==0.0.2

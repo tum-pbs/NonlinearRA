@@ -1,4 +1,4 @@
-# 2D Transitional Channel Flow — Neural Network Emulator
+# 2D Transitional Channel Flow
 
 This repository contains the code for training and analyzing neural network (NN) emulators of **2D plane Poiseuille flow** (Re = 2000), as described in the paper. The emulator learns the temporal evolution of infinitesimal velocity perturbations around the base parabolic profile $U(y) = 1 - y^2$, and is subsequently used for data-driven **stability analysis** and **resolvent analysis** via the Jacobian of the trained network.
 

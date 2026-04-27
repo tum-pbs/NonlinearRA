@@ -1,3 +1,5 @@
+# Lorenz System
+
 ## Overview
 
 This toy example implements a neural network approximation of the classical **Lorenz-63 system**, following the example from:
