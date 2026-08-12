@@ -6,6 +6,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+import numpy as np
 import optax
 import pdequinox as pdeqx
 import trainax as tx
@@ -33,24 +34,26 @@ if __name__ == "__main__":
 
         trj = []
         for i in range(len(files)):
-            data = jnp.load(os.path.join(myDir, files[i]))
+            data = np.load(os.path.join(myDir, files[i]))
             trj.append(data['data'])
 
         trjs.append(trj)
 
-    trjs = jnp.array(trjs)
+    trjs = np.array(trjs, dtype=np.float64)
     print(trjs.shape)
-    max_uval = jnp.max(trjs[:, :, 0, :, :])
-    max_vval = jnp.max(trjs[:, :, 1, :, :])
-    trjs = trjs.at[:, :, 0, :, :].set(trjs[:, :, 0, :, :] / max_uval)
-    trjs = trjs.at[:, :, 1, :, :].set(trjs[:, :, 1, :, :] / max_vval)
+
+    max_uval = np.max(trjs[:, :, 0, :, :])
+    max_vval = np.max(trjs[:, :, 1, :, :])
+    trjs[:, :, 0, :, :] = trjs[:, :, 0, :, :] / max_uval
+    trjs[:, :, 1, :, :] = trjs[:, :, 1, :, :] / max_vval
     print("Max u value:", max_uval, "Max v value:", max_vval)
-    jnp.savez('norm_dynamics.npz', u_max=max_uval, v_max=max_vval)
+    np.savez('norm_dynamics.npz', u_max=max_uval, v_max=max_vval)
+    trjs = jnp.array(trjs, dtype=jnp.float32)
 
     idim = 32; jdim = 64
-    x_1d = jnp.arange(idim) * 2 * jnp.pi / idim
-    y_1d = jnp.cos(jnp.pi * jnp.arange(jdim) / (jdim - 1))
-    x, y = jnp.meshgrid(x_1d, y_1d, indexing="ij")
+    x_1d = np.arange(idim) * 2 * np.pi / idim
+    y_1d = np.cos(np.pi * np.arange(jdim) / (jdim - 1))
+    x, y = np.meshgrid(x_1d, y_1d, indexing="ij")
 
     save_path = "../results/expo%d_level%d_batch%d_roll%d_nrun%d/" % (args.expo, args.level, args.batch_size, args.n_rollout, args.n_runs)
 
