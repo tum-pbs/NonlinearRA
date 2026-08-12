@@ -84,55 +84,53 @@ if __name__ == "__main__":
 
         fig, axes = plt.subplots(3, 2, figsize=(15, 8))
         prediction_loss = jnp.zeros((799, 2))
-        for i in range(1, 800):
-            fig.suptitle(f"Frame {i}", fontsize=16)
-            colorbars = []
-
-            for j in range(2):  # u, v
-                vmin = gt_trj[i, j].min()
-                vmax = gt_trj[i, j].max()
-                bound = max(abs(vmin),abs(vmax))
-                diff_vmin = (gt_trj[i, j] - pred_trj[i, j]).min()
-                diff_vmax = (gt_trj[i, j] - pred_trj[i, j]).max()
-
-                # GT
-                contour1 = axes[0][j].contourf(x, y, gt_trj[i, j], cmap='viridis', levels=jnp.linspace(-bound, bound, 15))
-                axes[0][j].set_title(f"{var_names[j]} GT")
-                axes[0][j].axis('off')
-                cbar1 = plt.colorbar(contour1, ax=axes[0][j], orientation='horizontal')
-                cbar1.set_ticks(jnp.linspace(-bound, bound, 5))
-                colorbars.append(cbar1)
-
-                # Pred
-                contour2 = axes[1][j].contourf(x, y, pred_trj[i, j], cmap='viridis', levels=jnp.linspace(-bound, bound, 15))
-                axes[1][j].set_title(f"{var_names[j]} Pred")
-                axes[1][j].axis('off')
-                cbar2 = plt.colorbar(contour2, ax=axes[1][j], orientation='horizontal')
-                cbar2.set_ticks(jnp.linspace(-bound, bound, 5))
-                colorbars.append(cbar2)
-
-                # Diff
-                contour3 = axes[2][j].contourf(x, y, gt_trj[i, j] - pred_trj[i, j], cmap='bwr', levels=jnp.linspace(diff_vmin, diff_vmax, 15))
-                axes[2][j].set_title(f"{var_names[j]} Diff")
-                axes[2][j].axis('off')
-                cbar3 = plt.colorbar(contour3, ax=axes[2][j], orientation='horizontal')
-                cbar3.set_ticks(jnp.linspace(diff_vmin, diff_vmax, 5))
-                colorbars.append(cbar3)
-
-                prediction_loss = prediction_loss.at[i-1, j].set(jnp.sum(jnp.abs(pred_trj[i, j] - gt_trj[i, j]))/jnp.sum(jnp.abs(gt_trj[i, j])))
-
-            plt.tight_layout()
-            plt.subplots_adjust(top=0.92)
-            frame_path = os.path.join(output_dir, f"frame_{i:03d}.png")
-            plt.savefig(frame_path)
-            
-            for cbar in colorbars: cbar.remove()
-            for a in axes.flatten(): a.cla() 
-
         with imageio.get_writer(save_path + "/run%d" % n + '/video_channel_UNet.mp4', fps=12) as writer:
-            for i in range(1,800):
-                image = imageio.imread(output_dir + f"/frame_{i:03d}.png")
-                writer.append_data(image)
+            for i in range(1, 800):
+                fig.suptitle(f"Frame {i}", fontsize=16)
+                colorbars = []
+
+                for j in range(2):  # u, v
+                    vmin = gt_trj[i, j].min()
+                    vmax = gt_trj[i, j].max()
+                    bound = max(abs(vmin),abs(vmax))
+                    diff_vmin = (gt_trj[i, j] - pred_trj[i, j]).min()
+                    diff_vmax = (gt_trj[i, j] - pred_trj[i, j]).max()
+
+                    # GT
+                    contour1 = axes[0][j].contourf(x, y, gt_trj[i, j], cmap='viridis', levels=jnp.linspace(-bound, bound, 15))
+                    axes[0][j].set_title(f"{var_names[j]} GT")
+                    axes[0][j].axis('off')
+                    cbar1 = plt.colorbar(contour1, ax=axes[0][j], orientation='horizontal')
+                    cbar1.set_ticks(jnp.linspace(-bound, bound, 5))
+                    colorbars.append(cbar1)
+
+                    # Pred
+                    contour2 = axes[1][j].contourf(x, y, pred_trj[i, j], cmap='viridis', levels=jnp.linspace(-bound, bound, 15))
+                    axes[1][j].set_title(f"{var_names[j]} Pred")
+                    axes[1][j].axis('off')
+                    cbar2 = plt.colorbar(contour2, ax=axes[1][j], orientation='horizontal')
+                    cbar2.set_ticks(jnp.linspace(-bound, bound, 5))
+                    colorbars.append(cbar2)
+
+                    # Diff
+                    contour3 = axes[2][j].contourf(x, y, gt_trj[i, j] - pred_trj[i, j], cmap='bwr', levels=jnp.linspace(diff_vmin, diff_vmax, 15))
+                    axes[2][j].set_title(f"{var_names[j]} Diff")
+                    axes[2][j].axis('off')
+                    cbar3 = plt.colorbar(contour3, ax=axes[2][j], orientation='horizontal')
+                    cbar3.set_ticks(jnp.linspace(diff_vmin, diff_vmax, 5))
+                    colorbars.append(cbar3)
+
+                    prediction_loss = prediction_loss.at[i-1, j].set(jnp.sum(jnp.abs(pred_trj[i, j] - gt_trj[i, j]))/jnp.sum(jnp.abs(gt_trj[i, j])))
+
+                plt.tight_layout()
+                plt.subplots_adjust(top=0.92)
+
+                fig.canvas.draw()
+                frame = np.asarray(fig.canvas.buffer_rgba())[..., :3]
+                writer.append_data(frame)
+
+                for cbar in colorbars: cbar.remove()
+                for a in axes.flatten(): a.cla()
 
         plt.figure()
         plt.yscale('log')
