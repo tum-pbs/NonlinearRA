@@ -52,7 +52,7 @@ if __name__ == "__main__":
     y_1d = jnp.cos(jnp.pi * jnp.arange(jdim) / (jdim - 1))
     x, y = jnp.meshgrid(x_1d, y_1d, indexing="ij")
 
-    save_path = "../results/expo%d_level%d_batch%d_roll%d_nrun%d/" % (args.expo, args.layer, args.batch_size, args.n_rollout, args.n_runs)
+    save_path = "../results/expo%d_level%d_batch%d_roll%d_nrun%d/" % (args.expo, args.level, args.batch_size, args.n_rollout, args.n_runs)
 
     for i in range(args.n_runs):
         os.makedirs(save_path + "run%d" % i, exist_ok=True)
