@@ -63,7 +63,7 @@ if __name__ == "__main__":
     x, y = jnp.meshgrid(x_1d, y_1d, indexing="ij")
 
     for n in range(n_run):
-        model_path = save_path + "/run%d" % n + "/channel_UNet.eqx"
+        model_path = save_path + "/run%d" % n + "/channel_MLP.eqx"
         emulator = pdeqx.arch.MLP(
                 num_spatial_dims=1,
                 in_channels=1,
