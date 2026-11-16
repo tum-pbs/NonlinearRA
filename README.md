@@ -1,8 +1,9 @@
 # A neural operator framework for data-driven discovery of stability and receptivity in physical systems
 
 <div align="center">
-[Paper](https://www.pnas.org/doi/10.1073/pnas.2526451123)  • 
-[ArXiv](https://arxiv.org/abs/2604.19465)  • 
+  
+[Published Paper](https://www.pnas.org/doi/10.1073/pnas.2526451123)  • 
+[ArXiv Version](https://arxiv.org/abs/2604.19465)  • 
 [Hugging Face](https://huggingface.co/datasets/jiatingdaole1109/NonlinearRA/tree/main) 
 
 </div>
@@ -56,17 +57,16 @@ See the README in each case folder for specific usage:
 If you use this code in your research, please cite:
  
 ```bibtex
-@article{
-doi:10.1073/pnas.2526451123,
-author = {Chengyun Wang  and Liwei Chen  and Nils Thuerey },
-title = {A neural operator framework for data-driven discovery of stability and receptivity in physical systems},
-journal = {Proceedings of the National Academy of Sciences},
-volume = {123},
-number = {42},
-pages = {e2526451123},
-year = {2026},
-doi = {10.1073/pnas.2526451123},
-URL = {https://www.pnas.org/doi/abs/10.1073/pnas.2526451123}}
+@article{wang2026neural,
+  title={A neural operator framework for data-driven discovery of stability and receptivity in physical systems},
+  author={Wang, Chengyun and Chen, Liwei and Thuerey, Nils},
+  journal={Proceedings of the National Academy of Sciences},
+  volume={123},
+  number={42},
+  pages={e2526451123},
+  year={2026},
+  publisher={National Academy of Sciences}
+}
 ```
 
 ## 📧 Contact
